@@ -2,135 +2,79 @@ package main
 
 import (
 	"fmt"
+	"gorm.io/driver/sqlserver"
+	"gorm.io/gorm"
+	"time"
 )
 
 func main() {
-	fmt.Println("Hello,world")
+	material := Material{
+		Id:         12356,
+		ObjectCode: "MATERIAL",
+		Code:       "1",
+		Name:       "2",
+		ManageType: "B",
+		Status:     "Y",
+		Creator:    1,
+		CreateTime: time.Now()}
 
-	c, d := add(10, 11)
+	fmt.Println(material.Code)
 
-	fmt.Println(c, d)
-
-	str := "abc"
-	str1 := str
-
-	str = "ABC"
-
-	fmt.Println(str1)
-	point()
-	newSalesOrder()
-
-	var lanMap = []string{"JAVA", "C#", "GO", "Python"}
-	for _, item := range lanMap {
-		fmt.Println(item)
+	dsn := "sqlserver://sa:AVAtech@2020@192.168.0.216:1433?database=dahupt_stocktask_BAT"
+	db, err := gorm.Open(sqlserver.Open(dsn), &gorm.Config{})
+	if err != nil {
+		fmt.Println(err)
 	}
 
-	testMap()
+	sqlDB, err := db.DB()
 
-	// 正常情况
-	if result, errorMsg := Divide(100, 10); errorMsg == "" {
-		fmt.Println("100/10 = ", result)
-	}
-	// 当除数为零的时候会返回错误信息
-	if _, errorMsg := Divide(100, 0); errorMsg != "" {
-		fmt.Println("errorMsg is: ", errorMsg)
-	}
+	// SetMaxIdleConns 设置空闲连接池中连接的最大数量
+	sqlDB.SetMaxIdleConns(10)
 
+	// SetMaxOpenConns 设置打开数据库连接的最大数量。
+	sqlDB.SetMaxOpenConns(100)
+
+	// SetConnMaxLifetime 设置了连接可复用的最大时间。
+	sqlDB.SetConnMaxLifetime(time.Hour)
+
+	Add(&material, db)
+
+	defer sqlDB.Close()
 }
 
-func add(x, y int) (a int, b int) {
-	a = x + y
-	b = x - y
-	return a, b
+type Material struct {
+	Id int64 `gorm "ids"`
+
+	ObjectCode string `gorm object_code`
+
+	Code string `gorm code`
+
+	Name string `gorm name`
+
+	ManageType string `gorm manage_type`
+
+	Status string `gorm status`
+
+	Creator int64 `gorm creator`
+
+	CreateTime time.Time `gorm create_time`
 }
 
-func point() {
-	a := "abcd"
-	var ip = &a
-
-	fmt.Println(*ip)
-	fmt.Println(*&a)
-	fmt.Println(*ip)
-	fmt.Println(&a)
-	fmt.Println(&ip)
-	fmt.Println(&*ip)
+func (Material) TableName() string {
+	return "ava_mm_material"
 }
 
-func newSalesOrder() {
-	var order SalesOrder
-	var item SalesOrderLine
-	order.DocEntry = 1
-	order.DocDate = "2021-08-04"
-
-	// order.Lines = make([]SalsOrderLine, 2)
-	// order.Lines.add(ite)
-
-	item.DocEntry = 1
-	item.LineNum = 1
-
-	fmt.Println(order.DocEntry)
-
+func Add(material *Material, db *gorm.DB) {
+	db.Create(material)
 }
 
-func testMap() {
-	var city map[string]string
-	city = make(map[string]string, 0)
-	city["BEIJING"] = "BJ"
-	city[" YUEYANG"] = "YY"
-
-	for k, v := range city {
-		fmt.Println(k, " is ", v)
-		if k == "BEIJING" {
-			delete(city, k)
-		}
-	}
-
-	for k, v := range city {
-		fmt.Println(k, " is ", v)
-
-	}
+func BatchAdd(materials *[]Material, db *gorm.DB) {
+	db.CreateInBatches(materials, 10)
 }
 
-type SalesOrder struct {
-	DocEntry int
-	DocDate  string
-	Lines    []SalesOrderLine
-}
-
-type SalesOrderLine struct {
-	DocEntry int
-	LineNum  int
-	ItemCode string
-	WhsCode  string
-}
-
-// 定义一个 DivideError 结构
-type DivideError struct {
-	dividee int
-	divider int
-}
-
-// 实现 `error` 接口
-func (de DivideError) Error() string {
-	strFormat := `
-    Cannot proceed, the divider is zero.
-    dividee: %d
-    divider: 0
-`
-	return fmt.Sprintf(strFormat, de.dividee)
-}
-
-// 定义 `int` 类型除法运算的函数
-func Divide(varDividee int, varDivider int) (result int, errorMsg string) {
-	if varDivider == 0 {
-		dData := DivideError{
-			dividee: varDividee,
-			divider: varDivider,
-		}
-		errorMsg = dData.Error()
-		return
-	} else {
-		return varDividee / varDivider, ""
-	}
-
-}
+//
+//func Find(db *gorm.DB) []Material{
+//	var material Material
+// 	result := db.Find(&material)
+//  	//return result.Rows()
+//}
