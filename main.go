@@ -9,7 +9,7 @@ import (
 
 func main() {
 	material := Material{
-		Id:         12356,
+		//Id:         12356,
 		ObjectCode: "MATERIAL",
 		Code:       "1",
 		Name:       "2",
@@ -37,13 +37,28 @@ func main() {
 	// SetConnMaxLifetime 设置了连接可复用的最大时间。
 	sqlDB.SetConnMaxLifetime(time.Hour)
 
-	Add(&material, db)
-
 	defer sqlDB.Close()
+
+	//for i := 0; i< 100000;i++ {
+	//	go Add(&material,db)
+	//}
+
+	//Add(&material, db)
+	result := Material{}
+	Get(&result, db)
+	fmt.Println("result", result)
+
+	list := []Material{}
+	Find(&list, db)
+
+	//for i, m := range list {
+	//	fmt.Println("list",i," data:",m)
+	//}
+
 }
 
 type Material struct {
-	Id int64 `gorm "ids"`
+	//Id int64 `gorm "ids"`
 
 	ObjectCode string `gorm object_code`
 
@@ -70,11 +85,17 @@ func Add(material *Material, db *gorm.DB) {
 
 func BatchAdd(materials *[]Material, db *gorm.DB) {
 	db.CreateInBatches(materials, 10)
+	//db.WithContext(ctx)
 }
 
-//
-//func Find(db *gorm.DB) []Material{
-//	var material Material
-// 	result := db.Find(&material)
-//  	//return result.Rows()
-//}
+func Get(material *Material, db *gorm.DB) {
+	fmt.Println("material", material)
+	fmt.Println("*material", *material)
+	fmt.Println("&material", &material)
+	db.First(material)
+	fmt.Println(material.Creator)
+}
+
+func Find(materials *[]Material, db *gorm.DB) {
+	db.Find(&materials)
+}
